@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 @Component({
   selector: 'app-plan-designer',
   templateUrl: './plan-designer.component.html',
@@ -15,85 +16,108 @@ export class PlanDesignerComponent implements OnInit {
   }
 
   createScene() {
-    // Scene
-    let scene = new THREE.Scene();
-    // scene.background = new THREE.Color(0xdddddd);
-    
-    // // Renderer
-    // let renderer = new THREE.WebGLRenderer({ antialias: true });
-    // renderer.setSize(window.innerWidth, window.innerHeight);
-    // document.body.appendChild(renderer.domElement);
+    // Create the scene
+    var scene = new THREE.Scene();
 
-    // // Camera
-    // let camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 5000);
-    // camera.position.set(0, 0, 100);
-    // camera.lookAt(0, 0, 0);
+    // Create the camera
+    let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 4000);
+    camera.position.z = 1000;
 
-    // // Controls
-    // let controls = new OrbitControls(camera, renderer.domElement);
-
-    // // Plane
-    // const geometry = new THREE.PlaneGeometry( 1, 1 );
-    // const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-    // const plane = new THREE.Mesh( geometry, material );
-    // scene.add( plane );
-
-    // // Light
-    // let light = new THREE.PointLight(0xffffff, 1);
-    // light.position.set(0, 100, 100);
-    // scene.add(light);
-
-    // let animate = function () {
-    //     requestAnimationFrame(animate);
-    //     renderer.render(scene, camera);
-    // };
-
-    // animate();
-
-
-    // Create a camera
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.z = 5;
-
-    // Create a renderer
-    const renderer = new THREE.WebGLRenderer();
+    // Create the renderer
+    var renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Resize the canvas when the window size changes
-    window.addEventListener('resize', function () {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        renderer.setSize(width, height);
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-    });
+    // Configuring Controls 
+    this.configureControls(camera,renderer);
 
-    // Add ambient light
-    const ambientLight = new THREE.AmbientLight(0x404040);
-    scene.add(ambientLight);
+    // Define your points
+    var points = [
+      { x: 350, y: 148 },
+      { x: 800, y: 148 },
+      { x: 800, y: 298 },
+      { x: 1002, y: 298 },
+      { x: 1002, y: 448 },
+      { x: 348, y: 448 },
+      { x: 348, y: 147 }
+    ];
 
-    // Add directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff);
-    directionalLight.position.set(0, 1, 1).normalize();
-    scene.add(directionalLight);
 
-    // Load a GLTF model
-    const loader = new GLTFLoader();
-    loader.load('/assets/gltf/Anna_FBX.gltf', function (gltf) {
-        scene.add(gltf.scene);
-    }, undefined, function (error) {
-        console.error(error);
-    });
+
+    // Creating the walls of the room
+    var wallsGroup = this.createWalls(points);
+    
+    wallsGroup.position.y = -300 / 2
+    scene.add(wallsGroup);
+    scene.background = new THREE.Color(0xFFFFFF);
+
+    // After rotating the group, reposition the camera
+    camera.lookAt(wallsGroup.position);
 
     // Animation loop
     function animate() {
-        requestAnimationFrame(animate);
-        renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
     }
     animate();
+  }
 
-}
 
+
+
+  
+  // Configuring controls function
+  configureControls(camera : THREE.PerspectiveCamera , renderer : THREE.WebGLRenderer ){
+    // Adding controls to the scene
+    var controls = new OrbitControls( camera, renderer.domElement );
+    // This will prevent panning up and down.
+    controls.enablePan = false; 
+
+    // This will restrict zooming in and out.
+    controls.enableZoom = false; 
+
+    // This will disable rotation around X and Z axis.
+    controls.enableRotate = true; 
+    controls.minPolarAngle = Math.PI/2; 
+    controls.maxPolarAngle = Math.PI/2;
+
+    // These will ensure that the rotation is only around Y-axis.
+    controls.minAzimuthAngle = - Infinity; 
+    controls.maxAzimuthAngle = Infinity; 
+  }
+
+  // Creatign walls for the room
+  createWalls(points : any[]) : THREE.Group{
+    // Define the material for the line
+    let material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+    let group = new THREE.Group();
+
+    for (let i = 0; i < points.length - 1; i++) {
+      let startPoint = points[i];
+      let endPoint = points[i + 1];
+
+      let distance = Math.sqrt(
+        Math.pow(startPoint.x - endPoint.x, 2) +
+        Math.pow(startPoint.y - endPoint.y, 2)
+      );
+
+      let midpointX = (startPoint.x + endPoint.x) / 2;
+      let midpointY = (startPoint.y + endPoint.y) / 2;
+
+      let wallHeight = 300; // Define the height of the wall
+
+      let wallGeometry = new THREE.BoxGeometry(distance, wallHeight, 1);
+      let wall = new THREE.Mesh(wallGeometry, material);
+
+      wall.position.set(midpointX, wallHeight / 2, midpointY);
+
+      let angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
+      wall.rotation.set(0, -angle, 0);
+
+      group.add(wall);
+      
+    }
+    return group;
+  }
 
 }
