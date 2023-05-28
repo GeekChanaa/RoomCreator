@@ -109,7 +109,7 @@ export class PlanDesignerComponent implements OnInit {
       let wallGeometry = new THREE.BoxGeometry(distance, wallHeight, 1);
       let wall = new THREE.Mesh(wallGeometry, material);
 
-      wall.position.set(midpointX, wallHeight / 2, midpointY);
+      wall.position.set(-midpointX, wallHeight / 2, midpointY);
 
       let angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
       wall.rotation.set(0, -angle, 0);
@@ -117,6 +117,11 @@ export class PlanDesignerComponent implements OnInit {
       group.add(wall);
       
     }
+    const box = new THREE.Box3().setFromObject(group);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    
+    group.position.sub(center);
     return group;
   }
 
