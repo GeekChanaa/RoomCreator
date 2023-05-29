@@ -14,14 +14,23 @@ export class PlanCreatorComponent implements OnInit {
   cursorX: number = 0; // Cursor X position
   cursorY: number = 0; // Cursor Y position
 
+  // Array of points
+  points: any[] = [];
+
   //cursortypes : 
   cursorPan : boolean = false;
   cursorDraw : boolean = true;
 
   panX: number = 0;
   panY: number = 0;
-  constructor() { }
 
+  canvas : any = {};
+
+  // Constructor
+  constructor() { 
+  }
+
+  // On init life cycle hook
   ngOnInit() {
   }
 
@@ -35,11 +44,11 @@ export class PlanCreatorComponent implements OnInit {
   }
 
   ngAfterViewInit() {
-    const canvas = this.myCanvas.nativeElement;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    this.ctx = canvas.getContext('2d')!;
-    var points: any[] = [];
+    this.canvas = this.myCanvas.nativeElement;
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+    this.ctx = this.canvas.getContext('2d')!;
+    
 
     const drawPoint = (x: number, y: number) => {
       this.ctx.beginPath();
@@ -75,46 +84,46 @@ export class PlanCreatorComponent implements OnInit {
       this.ctx.lineWidth = 1 / this.scale;
 
       // Vertical lines
-      for (let x = gridSize; x < canvas.width / this.scale; x += gridSize) {
+      for (let x = gridSize; x < this.canvas.width / this.scale; x += gridSize) {
         this.ctx.beginPath();
         this.ctx.moveTo(x-this.panX, 0);
-        this.ctx.lineTo(x-this.panX, canvas.height / this.scale);
+        this.ctx.lineTo(x-this.panX, this.canvas.height / this.scale);
         this.ctx.stroke();
       }
 
       // Horizontal lines
-      for (let y = gridSize; y < canvas.height / this.scale; y += gridSize) {
+      for (let y = gridSize; y < this.canvas.height / this.scale; y += gridSize) {
         this.ctx.beginPath();
         this.ctx.moveTo(0, y-this.panY);
-        this.ctx.lineTo(canvas.width / this.scale, y-this.panY);
+        this.ctx.lineTo(this.canvas.width / this.scale, y-this.panY);
         this.ctx.stroke();
       }
     }
 
-    canvas.addEventListener('click', (e) => {
+    this.canvas.addEventListener('click', (e : any) => {
       if(this.cursorDraw)
       {
-        var rect = canvas.getBoundingClientRect();
+        var rect = this.canvas.getBoundingClientRect();
         var x = (e.clientX - rect.left)/this.scale;
         var y = (e.clientY - rect.top)/this.scale;
-        if( points.length > 0 && Math.abs(this.cursorY - points[points.length - 1].y) < 20){
-          y = points[points.length - 1].y
+        if( this.points.length > 0 && Math.abs(this.cursorY - this.points[this.points.length - 1].y) < 20){
+          y = this.points[this.points.length - 1].y
         }
-        if( points.length > 0 && Math.abs(this.cursorX - points[points.length - 1].x) < 20){
-          x = points[points.length - 1].x
+        if( this.points.length > 0 && Math.abs(this.cursorX - this.points[this.points.length - 1].x) < 20){
+          x = this.points[this.points.length - 1].x
         }
         drawPoint(x*this.scale, y*this.scale );
-        points.push({ x: x, y: y });
+        this.points.push({ x: x, y: y });
 
-        if (points.length > 1) {
+        if (this.points.length > 1) {
           // If there are at least two points, draw a line between the last two points
-          var p1 = points[points.length - 2];
-          var p2 = points[points.length - 1];
+          var p1 = this.points[this.points.length - 2];
+          var p2 = this.points[this.points.length - 1];
           drawLine(p1.x, p1.y, p2.x, p2.y, true);
         }
       }
-
-      console.log(points);
+      let recenteredPoints = this.recenterPoints(this.points);
+      console.log(recenteredPoints);
       
     });
 
@@ -129,12 +138,12 @@ export class PlanCreatorComponent implements OnInit {
       }
 
       // Clear the canvas and redraw everything at the new scale
-      this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.ctx.save();
       this.ctx.scale(this.scale, this.scale);
 
       // Redraw all points and lines
-      for (let point of points) {
+      for (let point of this.points) {
         drawPoint(point.x, point.y);
       }
 
@@ -149,13 +158,13 @@ export class PlanCreatorComponent implements OnInit {
     }, { passive: false });
 
     // Event listener for cursor movement
-    canvas.addEventListener('mousemove', (event) => {
-      const rect = canvas.getBoundingClientRect();
+    this.canvas.addEventListener('mousemove', (event : any) => {
+      const rect = this.canvas.getBoundingClientRect();
       this.cursorX = event.clientX - rect.left;
       this.cursorY = event.clientY - rect.top;
 
       // Clear the canvas and redraw everything at the new scale
-      this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.ctx.save();
       this.ctx.scale(this.scale, this.scale);
 
@@ -163,7 +172,7 @@ export class PlanCreatorComponent implements OnInit {
       drawGrid();
 
       // Redraw all points
-      for (let point of points) {
+      for (let point of this.points) {
         drawPoint(point.x, point.y);
       }
 
@@ -176,22 +185,22 @@ export class PlanCreatorComponent implements OnInit {
 
       // Draw a horizontal preview line and stick the preview line into the preview line
       if(this.cursorDraw)
-      if(Math.abs(this.cursorY - points[points.length - 1].y) < 20 || Math.abs(this.cursorX - points[points.length - 1].x) < 20)
+      if(Math.abs(this.cursorY - this.points[this.points.length - 1].y) < 20 || Math.abs(this.cursorX - this.points[this.points.length - 1].x) < 20)
       {
-        if(Math.abs(this.cursorY - points[points.length - 1].y) < 20 )
+        if(Math.abs(this.cursorY - this.points[this.points.length - 1].y) < 20 )
         {
           this.ctx.beginPath();
-          this.ctx.moveTo(0, points[points.length - 1].y);
-          this.ctx.lineTo(canvas.width / this.scale, points[points.length - 1].y);
+          this.ctx.moveTo(0, this.points[this.points.length - 1].y);
+          this.ctx.lineTo(this.canvas.width / this.scale, this.points[this.points.length - 1].y);
           this.ctx.strokeStyle = 'lightgray';  // Set the stroke color to light gray
           this.ctx.stroke();
           // Redraw the preview line
-          if (points.length > 0) {
+          if (this.points.length > 0) {
             
-            var x = points[points.length - 1].x;
-            var y = points[points.length - 1].y;
+            var x = this.points[this.points.length - 1].x;
+            var y = this.points[this.points.length - 1].y;
             const lastPoint = {x,y};
-            drawLine(lastPoint.x, lastPoint.y, this.cursorX/this.scale, points[points.length - 1].y);
+            drawLine(lastPoint.x, lastPoint.y, this.cursorX/this.scale, this.points[this.points.length - 1].y);
             const distance = calculateDistance(lastPoint.x, lastPoint.y, this.cursorX / this.scale, this.cursorY / this.scale);
             const middleX = (lastPoint.x + this.cursorX) / 2 ;
             const middleY = ((lastPoint.y + this.cursorY) / 2) - 20;
@@ -204,30 +213,44 @@ export class PlanCreatorComponent implements OnInit {
         }
 
         // Draw a vertical preview line
-        if(Math.abs(this.cursorX - points[points.length - 1].x) < 20)
+        if(Math.abs(this.cursorX - this.points[this.points.length - 1].x) < 20)
         {
           this.ctx.beginPath();
-          this.ctx.moveTo(points[points.length - 1].x, 0);
-          this.ctx.lineTo(points[points.length - 1].x,canvas.height / this.scale);
+          this.ctx.moveTo(this.points[this.points.length - 1].x, 0);
+          this.ctx.lineTo(this.points[this.points.length - 1].x,this.canvas.height / this.scale);
           this.ctx.strokeStyle = 'lightgray';  // Set the stroke color to light gray
           this.ctx.stroke();
 
           // Redraw the preview line
-          if (points.length > 0) {
-            var x = points[points.length - 1].x;
-            var y = points[points.length - 1].y;
+          if (this.points.length > 0) {
+            var x = this.points[this.points.length - 1].x;
+            var y = this.points[this.points.length - 1].y;
             const lastPoint = {x,y};
-            drawLine(lastPoint.x, lastPoint.y, points[points.length - 1].x, this.cursorY/this.scale);
+            drawLine(lastPoint.x, lastPoint.y, this.points[this.points.length - 1].x, this.cursorY/this.scale);
+            const distance = calculateDistance(lastPoint.x, lastPoint.y, this.cursorX / this.scale, this.cursorY / this.scale);
+            const middleX = (lastPoint.x + this.cursorX) / 2 ;
+            const middleY = ((lastPoint.y + this.cursorY) / 2) - 20;
+            
+            this.ctx.fillStyle = 'black';
+            this.ctx.font = '16px Arial';
+            this.ctx.fillText((distance/50).toFixed(2) + "m", middleX, middleY);
           }
         }
       }
       else{
         // Redraw the preview line
-        if (points.length > 0) {
-          var x = points[points.length - 1].x;
-          var y = points[points.length - 1].y;
+        if (this.points.length > 0) {
+          var x = this.points[this.points.length - 1].x;
+          var y = this.points[this.points.length - 1].y;
           const lastPoint = {x,y};
           drawLine(lastPoint.x, lastPoint.y, this.cursorX/this.scale, this.cursorY/this.scale);
+          const distance = calculateDistance(lastPoint.x, lastPoint.y, this.cursorX / this.scale, this.cursorY / this.scale);
+          const middleX = (lastPoint.x + this.cursorX) / 2 ;
+          const middleY = ((lastPoint.y + this.cursorY) / 2) - 20;
+          
+          this.ctx.fillStyle = 'black';
+          this.ctx.font = '16px Arial';
+          this.ctx.fillText((distance/50).toFixed(2) + "m", middleX, middleY);
         }
       }
 
@@ -237,7 +260,7 @@ export class PlanCreatorComponent implements OnInit {
     let isPanning = false;
     let startPanX: number, startPanY: number;
 
-    canvas.addEventListener('mousedown', (e) => {
+    this.canvas.addEventListener('mousedown', (e : any) => {
       if(this.cursorPan)
       {
         isPanning = true;
@@ -261,12 +284,12 @@ export class PlanCreatorComponent implements OnInit {
         this.panY += dy;
 
         // Now that the pan offset has changed, redraw everything
-        this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
         this.ctx.scale(this.scale, this.scale);
         drawGrid();
 
-        for (let point of points) {
+        for (let point of this.points) {
           drawPoint(point.x, point.y);
         }
 
@@ -274,14 +297,41 @@ export class PlanCreatorComponent implements OnInit {
           drawLine(line.x1, line.y1, line.x2, line.y2, false);
         }
 
-        
-
         this.ctx.restore();
       }
     });
 
     // Initial draw of the grid : 
     drawGrid();
+  }
+
+  // Recentering points to the 0,0 axis
+  recenterPoints(points: any[]) {
+    // Calculate total x and y
+    let totalX = 0;
+    let totalY = 0;
+    points.forEach(point => {
+        totalX += point.x;
+        totalY += point.y;
+    });
+
+    // Find average to get the center of the square
+    let centerX = totalX / points.length;
+    let centerY = totalY / points.length;
+
+    // Recenter points
+    let recenteredPoints = points.map(point => ({
+        x: point.x - centerX,
+        y: point.y - centerY
+    }));
+
+    return recenteredPoints;
+  }
+
+  // Clearing the canvas
+  clearCanvas(){
+    this.points = [];
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
 }

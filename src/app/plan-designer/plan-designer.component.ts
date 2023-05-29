@@ -21,7 +21,7 @@ export class PlanDesignerComponent implements OnInit {
 
     // Create the camera
     let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 4000);
-    camera.position.z = 1000;
+    camera.position.z = 100;
 
     // Create the renderer
     var renderer = new THREE.WebGLRenderer();
@@ -33,14 +33,13 @@ export class PlanDesignerComponent implements OnInit {
 
     // Define your points
     var points = [
-      { x: 350, y: 148 },
-      { x: 800, y: 148 },
-      { x: 800, y: 298 },
-      { x: 1002, y: 298 },
-      { x: 1002, y: 448 },
-      { x: 348, y: 448 },
-      { x: 348, y: 147 }
+      { x: -580, y: -580 },
+      { x: 620, y: -580 },
+      { x: 620, y: 620 },
+      { x: -580, y: 620 },
+      { x: -580, y: -580 }
     ];
+
 
 
 
@@ -74,12 +73,12 @@ export class PlanDesignerComponent implements OnInit {
     controls.enablePan = false; 
 
     // This will restrict zooming in and out.
-    controls.enableZoom = false; 
+    controls.enableZoom = true; 
 
     // This will disable rotation around X and Z axis.
     controls.enableRotate = true; 
-    controls.minPolarAngle = Math.PI/2; 
-    controls.maxPolarAngle = Math.PI/2;
+    controls.minPolarAngle = 0; 
+controls.maxPolarAngle = Math.PI;
 
     // These will ensure that the rotation is only around Y-axis.
     controls.minAzimuthAngle = - Infinity; 
@@ -89,12 +88,13 @@ export class PlanDesignerComponent implements OnInit {
   // Creatign walls for the room
   createWalls(points : any[]) : THREE.Group{
     // Define the material for the line
-    let material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+    let material = new THREE.MeshStandardMaterial({ color: 0x0000ff });
     let group = new THREE.Group();
 
     for (let i = 0; i < points.length - 1; i++) {
       let startPoint = points[i];
       let endPoint = points[i + 1];
+
 
       let distance = Math.sqrt(
         Math.pow(startPoint.x - endPoint.x, 2) +
@@ -104,7 +104,7 @@ export class PlanDesignerComponent implements OnInit {
       let midpointX = (startPoint.x + endPoint.x) / 2;
       let midpointY = (startPoint.y + endPoint.y) / 2;
 
-      let wallHeight = 300; // Define the height of the wall
+      let wallHeight = 600; // Define the height of the wall
 
       let wallGeometry = new THREE.BoxGeometry(distance, wallHeight, 1);
       let wall = new THREE.Mesh(wallGeometry, material);
@@ -120,7 +120,45 @@ export class PlanDesignerComponent implements OnInit {
     const box = new THREE.Box3().setFromObject(group);
     const center = new THREE.Vector3();
     box.getCenter(center);
-    
+    let pointLight = new THREE.PointLight(0xffffff, 1); 
+
+    // Assuming 'points' is your array of 2D points
+    let shape = new THREE.Shape();
+
+    // Start from the first point
+    shape.moveTo(points[0].x, points[0].y);
+
+    // Then go through each point
+    for (let i = 1; i < points.length; i++) {
+      shape.lineTo(points[i].x, points[i].y);
+    }
+
+    // Define extrude settings
+    let extrudeSettings = {
+      depth: 10,  // The amount of extrusion, i.e., the height of the plane
+      bevelEnabled: false  // No bevel for the edges
+    };
+
+    // Create geometry
+    let geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+    // Create material
+    let materialss = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+
+    // Create mesh
+    let plane = new THREE.Mesh(geometry, materialss);
+
+    // Rotate the plane 90 degrees around the X-axis
+    plane.rotation.x = -Math.PI / 2;
+    // Add to your scene or group
+    const boxx = new THREE.Box3().setFromObject(plane);
+    const centerr = new THREE.Vector3();
+    boxx.getCenter(center);
+    plane.position.sub(center);
+    group.add(plane);
+
+    group.add(pointLight);
+
     group.position.sub(center);
     return group;
   }
