@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-menu',
@@ -7,9 +8,17 @@ import { Component, OnInit } from '@angular/core';
 })
 export class MenuComponent implements OnInit {
 
-  constructor() { }
+  menuExpanded : boolean = false;
+
+  constructor(
+    private router : Router
+  ) { }
 
   ngOnInit() {
   }
 
+  expand(){
+    this.menuExpanded = !this.menuExpanded;
+    this.router.navigate(['/plan', { outlets: { menu3D: ['floor-menu'] } }]);
+  }
 }

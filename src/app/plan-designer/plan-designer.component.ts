@@ -48,6 +48,9 @@ export class PlanDesignerComponent implements OnInit {
     
     wallsGroup.position.y = -300 / 2
     scene.add(wallsGroup);
+
+    const axesHelper = new THREE.AxesHelper( 5 );
+    scene.add( axesHelper );
     scene.background = new THREE.Color(0xFFFFFF);
 
     // After rotating the group, reposition the camera
@@ -78,7 +81,7 @@ export class PlanDesignerComponent implements OnInit {
     // This will disable rotation around X and Z axis.
     controls.enableRotate = true; 
     controls.minPolarAngle = 0; 
-controls.maxPolarAngle = Math.PI;
+    controls.maxPolarAngle = Math.PI;
 
     // These will ensure that the rotation is only around Y-axis.
     controls.minAzimuthAngle = - Infinity; 
@@ -106,7 +109,7 @@ controls.maxPolarAngle = Math.PI;
 
       let wallHeight = 600; // Define the height of the wall
 
-      let wallGeometry = new THREE.BoxGeometry(distance, wallHeight, 1);
+      let wallGeometry = new THREE.BoxGeometry(distance, wallHeight, 40);
       let wall = new THREE.Mesh(wallGeometry, material);
 
       wall.position.set(-midpointX, wallHeight / 2, midpointY);
@@ -126,12 +129,16 @@ controls.maxPolarAngle = Math.PI;
     let shape = new THREE.Shape();
 
     // Start from the first point
-    shape.moveTo(points[0].x, points[0].y);
+    shape.moveTo(points[0].x-200, points[0].y+200);
 
     // Then go through each point
     for (let i = 1; i < points.length; i++) {
-      shape.lineTo(points[i].x, points[i].y);
+      shape.lineTo(points[i].x-200, points[i].y+200);
     }
+
+    // Calculate the center point
+    let centerX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+    let centerY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
 
     // Define extrude settings
     let extrudeSettings = {
@@ -148,15 +155,37 @@ controls.maxPolarAngle = Math.PI;
     // Create mesh
     let plane = new THREE.Mesh(geometry, materialss);
 
+    // Create mesh roof
+    let roof = new THREE.Mesh(geometry, materialss);
+    roof.position.set(-centerX, -extrudeSettings.depth / 2, -centerY);
+
+
     // Rotate the plane 90 degrees around the X-axis
     plane.rotation.x = -Math.PI / 2;
+    roof.rotation.x = -Math.PI / 2;
+
+    // Translate the plane to the center
+    plane.position.set(-centerX, -extrudeSettings.depth / 2, -centerY);
+
+    // Add to your scene or group
+    group.add(plane);
+    group.add(roof);
+
     // Add to your scene or group
     const boxx = new THREE.Box3().setFromObject(plane);
     const centerr = new THREE.Vector3();
     boxx.getCenter(center);
+
+    const boxxx = new THREE.Box3().setFromObject(roof);
+    const centerrr = new THREE.Vector3();
+    boxxx.getCenter(center);
+
+    roof.position.sub(center);
+    roof.position.y =+ 600
     plane.position.sub(center);
     group.add(plane);
 
+    
     group.add(pointLight);
 
     group.position.sub(center);
